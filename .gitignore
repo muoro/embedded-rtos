@@ -1,0 +1,23 @@
+# Generated files and local installations
+build/
+build_*/
+buildroot-*/
+!embedded-linux/buildroot-external/
+/images/
+/logs/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.log
+*.local.*
+.dev.env
+.env
+CMakeUserPresets.json
+.venv/
+# Provisioned SSH credentials must never be published.
+/embedded-linux/buildroot-external/board/qemu-arm64/dev-overlay/root/
+/embedded-linux/buildroot-external/board/qemu-arm64/dev-overlay/etc/dropbear/
+*.pem
+*.key
+id_ed25519*
+id_rsa*

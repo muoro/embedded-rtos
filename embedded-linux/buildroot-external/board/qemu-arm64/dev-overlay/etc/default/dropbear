@@ -1,0 +1,2 @@
+# Development access uses an SSH key; password authentication is disabled.
+DROPBEAR_ARGS="-s"

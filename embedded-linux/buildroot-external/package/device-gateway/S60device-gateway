@@ -1,0 +1,19 @@
+#!/bin/sh
+DAEMON=/usr/bin/device-gateway
+PIDFILE=/var/run/device-gateway.pid
+LOG_LEVEL=info
+[ ! -r /etc/default/device-gateway ] || . /etc/default/device-gateway
+case "$1" in
+    start)
+        echo "Starting device-gateway"
+        start-stop-daemon -S -o -b -m -p "$PIDFILE" -x "$DAEMON" -- \
+            --serial /dev/ttyAMA1 --port 5556 --log-level "$LOG_LEVEL"
+        ;;
+    stop)
+        echo "Stopping device-gateway"
+        start-stop-daemon -K -o -p "$PIDFILE" -x "$DAEMON"
+        rm -f "$PIDFILE"
+        ;;
+    restart) "$0" stop; "$0" start ;;
+    *) echo "Usage: $0 {start|stop|restart}"; exit 1 ;;
+esac

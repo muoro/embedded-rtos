@@ -1,0 +1,26 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "arm64",
+      "displayName": "Buildroot ARM64",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/arm64",
+      "toolchainFile": "$env{BUILDROOT_DIR}/output/host/share/buildroot/toolchainfile.cmake",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "arm64",
+      "configurePreset": "arm64"
+    }
+  ]
+}

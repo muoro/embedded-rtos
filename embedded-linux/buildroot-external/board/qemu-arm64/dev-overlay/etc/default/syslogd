@@ -1,0 +1,2 @@
+# Bound the system log in RAM: current file plus one rotated file, about 512 KiB.
+SYSLOGD_ARGS="-s 256 -b 1"

@@ -1,0 +1,2 @@
+# Supported levels: error, warning, info, debug.
+LOG_LEVEL=info

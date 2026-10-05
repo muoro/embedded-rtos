@@ -1,0 +1,20 @@
+name: Native tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  linux-and-protocol:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S embedded-linux -B build/native -DBUILD_TESTING=ON
+      - name: Build
+        run: cmake --build build/native --parallel 2
+      - name: Test gateway with a pseudo-UART
+        run: ctest --test-dir build/native --output-on-failure
+      - name: Install firmware helper test dependencies
+        run: python3 -m pip install -r firmware/zephyr-smart-room/requirements.txt
+      - name: Test firmware-side Python protocol helper
+        working-directory: firmware/zephyr-smart-room
+        run: python3 -m pytest -q
