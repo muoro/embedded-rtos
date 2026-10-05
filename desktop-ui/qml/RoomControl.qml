@@ -1,118 +1,73 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "Theme.js" as Theme
 
 Panel {
     id: panel
     required property var model
-    Layout.minimumHeight: 410
     readonly property bool fresh: model.connected && model.online && model.valid
+    readonly property string outcome: model.result.split(" — ")[0]
+    readonly property color resultColor: model.pending ? Theme.warning : outcome === "Confirmed" ? Theme.success : outcome === "No command sent" ? Theme.muted : Theme.warning
     ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 20
-        spacing: 8
-        Text {
-            text: "Room control"
-            color: "#213849"
-            font.pixelSize: 17
-            font.weight: Font.DemiBold
-        }
-        Text {
-            text: "nRF52832 · Room 01"
-            color: "#677e8b"
-            font.pixelSize: 12
-            Layout.bottomMargin: 12
-        }
-        Repeater {
-            model: [
-                {
-                    label: "Occupancy",
-                    value: panel.model.room.occupied === undefined ? "Unknown" : panel.model.room.occupied ? "Occupied" : "Vacant"
-                },
-                {
-                    label: "Light",
-                    value: panel.model.room.light_on === undefined ? "Unknown" : panel.model.room.light_on ? "On" : "Off"
-                },
-                {
-                    label: "Contact",
-                    value: panel.model.room.contact_open === undefined ? "Unknown" : panel.model.room.contact_open ? "Open" : "Closed"
-                },
-                {
-                    label: "Alarm",
-                    value: panel.model.room.alarm === undefined ? "Unknown" : panel.model.room.alarm === "none" ? "Clear" : panel.model.room.alarm === "warning" ? "Warning" : "Alarm"
-                }
-            ]
+        anchors.fill: parent; anchors.margins: 20; spacing: 10
+        Text { text: "Light control"; color: Theme.text; font.pixelSize: 17; font.weight: Font.DemiBold }
+        RowLayout {
+            Layout.fillWidth: true; Layout.topMargin: 10
             ColumnLayout {
-                required property var modelData
-                Layout.fillWidth: true
-                spacing: 10
-                RowLayout {
-                    Layout.fillWidth: true
-                    Text {
-                        text: modelData.label
-                        color: "#677e8b"
-                        font.pixelSize: 13
+                spacing: 7
+                Text { text: "Ceiling light"; color: Theme.text; font.pixelSize: 14 }
+                Text { text: panel.model.room.light_on === undefined ? "Unknown" : panel.model.room.light_on ? "On" : "Off"; color: panel.fresh ? Theme.text : Theme.faint; font.pixelSize: 14 }
+            }
+            Item { Layout.fillWidth: true }
+            AbstractButton {
+                id: lightButton
+                objectName: "lightSwitch"
+                implicitWidth: 64; implicitHeight: 36
+                enabled: panel.model.ready
+                checked: panel.model.room.light_on === true
+                Accessible.role: Accessible.CheckBox
+                Accessible.name: "Ceiling light"
+                Accessible.checked: checked
+                // Do not let a local click pretend that the device accepted a command.
+                onClicked: panel.model.setLight(!checked)
+                ToolTip.visible: hovered
+                ToolTip.text: panel.model.pending ? "Waiting for device confirmation" : !panel.fresh ? "A current device state is required" : "Request light " + (checked ? "off" : "on")
+                background: Rectangle {
+                    radius: 18
+                    color: lightButton.checked && panel.fresh ? Theme.accent : Theme.border
+                    opacity: lightButton.enabled ? 1 : 0.45
+                    border.width: lightButton.activeFocus ? 2 : 0; border.color: Theme.text
+                    Rectangle {
+                        width: 28; height: 28; radius: 14; y: 4
+                        x: lightButton.checked ? parent.width - width - 4 : 4
+                        color: Theme.text
+                        Behavior on x { NumberAnimation { duration: 140 } }
                     }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                    Text {
-                        text: modelData.value
-                        color: panel.fresh ? "#213849" : "#8b969e"
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                    }
-                }
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: 1
-                    color: "#edf2f3"
                 }
             }
         }
-        Button {
-            id: lightButton
-            objectName: "lightSwitch"
-            Layout.fillWidth: true
-            Layout.topMargin: 12
-            implicitHeight: 44
-            enabled: panel.model.ready
-            checked: panel.model.room.light_on === true
-            text: panel.model.pending ? "Awaiting device…" : checked ? "Turn light off" : "Turn light on"
-            onClicked: panel.model.setLight(!checked)
-            contentItem: Text {
-                text: lightButton.text
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
-            }
-            background: Rectangle {
-                radius: 8
-                color: !lightButton.enabled ? "#a4b9b6" : lightButton.down ? "#116c62" : lightButton.hovered ? "#117d70" : "#168e80"
-                border.width: lightButton.activeFocus ? 2 : 0
-                border.color: "#213849"
-            }
-        }
-        Text {
+        StatusPill {
             objectName: "commandResult"
-            Layout.fillWidth: true
-            Layout.minimumHeight: 38
-            text: panel.model.result
-            color: "#677e8b"
-            font.pixelSize: 12
-            wrapMode: Text.WordWrap
-        }
-        Item {
-            Layout.fillHeight: true
+            label: panel.model.pending ? "Pending" : panel.outcome
+            tone: panel.resultColor; outlined: true
         }
         Text {
-            Layout.fillWidth: true
-            text: "Occupancy or an open contact keeps the light on."
-            color: "#677e8b"
-            font.pixelSize: 11
-            wrapMode: Text.WordWrap
+            Layout.fillWidth: true; wrapMode: Text.WordWrap
+            text: panel.model.pending ? "Waiting for the device reply" : !panel.fresh ? "Controls unlock when fresh state arrives" : panel.outcome === "Confirmed" ? "Command confirmed by device" : panel.model.result
+            color: Theme.muted; font.pixelSize: 11
+        }
+        Item { Layout.fillHeight: true; Layout.minimumHeight: 0 }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Theme.border }
+        Text { text: "Connection"; color: Theme.text; font.pixelSize: 15; font.weight: Font.DemiBold; Layout.topMargin: 3 }
+        GridLayout {
+            Layout.fillWidth: true; columns: 2; columnSpacing: 10; rowSpacing: 7
+            Text { text: "UART"; color: Theme.muted; font.pixelSize: 12 }
+            Text { Layout.fillWidth: true; horizontalAlignment: Text.AlignRight; text: "/dev/ttyAMA1"; color: Theme.muted; font.pixelSize: 12 }
+            Text { text: "Baud rate"; color: Theme.muted; font.pixelSize: 12 }
+            Text { Layout.fillWidth: true; horizontalAlignment: Text.AlignRight; text: "115200 · 8N1"; color: Theme.muted; font.pixelSize: 12 }
+            Text { text: "Gateway"; color: Theme.muted; font.pixelSize: 12 }
+            Text { Layout.fillWidth: true; horizontalAlignment: Text.AlignRight; text: "127.0.0.1:5556"; color: Theme.muted; font.pixelSize: 12 }
         }
     }
 }

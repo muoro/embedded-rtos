@@ -1,9 +1,17 @@
-param([string]$SerialPort = "COM4", [string]$QemuPath = "C:\Program Files\qemu\qemu-system-aarch64.exe")
+param([string]$SerialPort = "COM4", [string]$QemuPath = "C:\Program Files\qemu\qemu-system-aarch64.exe", [string]$ImageDirectory)
 $ErrorActionPreference = "Stop"
 $projectDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $qemu = $QemuPath
-$kernel = Join-Path $projectDir "images\Image"
-$rootfs = Join-Path $projectDir "images\rootfs.ext4"
+$configPath = Join-Path $projectDir "runtime.local.json"
+if (-not $ImageDirectory -and (Test-Path -LiteralPath $configPath)) {
+    $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+    $ImageDirectory = $config.ImageDirectory
+}
+if (-not $ImageDirectory) { $ImageDirectory = Join-Path $projectDir "images" }
+if (-not [IO.Path]::IsPathRooted($ImageDirectory)) { $ImageDirectory = Join-Path $projectDir $ImageDirectory }
+$ImageDirectory = [IO.Path]::GetFullPath($ImageDirectory)
+$kernel = Join-Path $ImageDirectory "Image"
+$rootfs = Join-Path $ImageDirectory "rootfs.ext4"
 $logDir = Join-Path $projectDir "logs"
 $normalizedDisk = $rootfs.Replace('\', '/')
 foreach ($file in @($qemu, $kernel, $rootfs)) {
@@ -20,7 +28,7 @@ if ($guest.Count -gt 0) {
     if (@($listener | Where-Object { $_.OwningProcess -in $guest.ProcessId }).Count -gt 0) {
         if (-not ($guest[0].CommandLine.Contains("5556-:5556"))) { throw "Restart QEMU to enable UI port 5556." }
         Write-Output "Using the running QEMU guest."
-        exit 0
+        return
     }
     throw "This image is already open in QEMU without SSH forwarding. Run poweroff in that guest, then retry."
 }

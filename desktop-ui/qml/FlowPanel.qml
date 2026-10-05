@@ -1,3 +1,4 @@
+import "Theme.js" as Theme
 import QtQuick
 import QtQuick.Layouts
 
@@ -31,21 +32,21 @@ Panel {
         Layout.fillWidth: true
         implicitHeight: 62
         radius: 9
-        color: active ? "#eaf5f1" : "#f3f6f7"
+        color: active ? Theme.selected : Theme.sidebar
         Column {
             anchors.centerIn: parent
             spacing: 5
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: label
-                color: "#213849"
+                color: Theme.text
                 font.pixelSize: panel.width < 600 ? 11 : 13
                 font.weight: Font.DemiBold
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: detail
-                color: "#677e8b"
+                color: Theme.muted
                 font.pixelSize: 10
             }
         }
@@ -58,21 +59,21 @@ Panel {
             anchors.horizontalCenter: parent.horizontalCenter
             y: 0
             text: label
-            color: "#677e8b"
+            color: Theme.muted
             font.pixelSize: 10
         }
         Rectangle {
             y: 25
             width: parent.width
             height: 2
-            color: "#c9dcd9"
+            color: Theme.border
         }
         Rectangle {
             y: 22
             width: 8
             height: 8
             radius: 4
-            color: "#168e80"
+            color: Theme.accent
             visible: pulse.running
             x: (parent.width - width) * (panel.outbound ? 1 - panel.progress : panel.progress)
         }
@@ -83,7 +84,7 @@ Panel {
         spacing: 10
         Text {
             text: panel.detailed ? "From the room to your screen" : "System activity"
-            color: "#213849"
+            color: Theme.text
             font.pixelSize: 16
             font.weight: Font.DemiBold
         }
@@ -92,7 +93,7 @@ Panel {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
             text: "Commands travel toward the device; state returns to the screen."
-            color: "#677e8b"
+            color: Theme.muted
             font.pixelSize: 12
         }
         RowLayout {
@@ -123,7 +124,7 @@ Panel {
         Text {
             Layout.fillWidth: true
             text: panel.lastMessage
-            color: "#677e8b"
+            color: Theme.muted
             font.family: "Consolas"
             font.pixelSize: 10
             elide: Text.ElideRight
@@ -133,7 +134,7 @@ Panel {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
             text: "UART 115200 8N1   ·   TCP 127.0.0.1:5556\nAnimation follows messages observed by Qt; it is not a UART packet trace."
-            color: "#677e8b"
+            color: Theme.muted
             font.pixelSize: 11
             lineHeight: 1.5
         }

@@ -1,7 +1,8 @@
 import QtQuick
+import "Theme.js" as Theme
 
 Rectangle {
-    color: "white"
-    radius: 12
-    border.color: "#dae6e8"
+    color: Theme.panel
+    radius: Theme.radius
+    border.color: Theme.border
 }

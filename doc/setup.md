@@ -135,6 +135,26 @@ cd C:\embedded-rtos
 .\run-ui.ps1 -SerialPort COM4
 ```
 
+The launcher starts or reuses QEMU, waits for SSH, starts the gateway if no
+instance is running, verifies its TCP listener, and opens the GUI. An existing
+development gateway is preserved to avoid competing UART readers.
+
+By default it uses `images/`, and the `embedded-rtos_ed25519` and
+`embedded-rtos_known_hosts` files under your Windows `.ssh` directory. To reuse
+an existing local installation, create `runtime.local.json` in the repository
+root (ignored by Git):
+
+```json
+{
+  "ImageDirectory": "C:\\linux-nrf-stm\\images",
+  "SshKey": "C:\\Users\\YOUR_USER\\.ssh\\linux-nrf-stm_ed25519",
+  "SshKnownHosts": "C:\\Users\\YOUR_USER\\.ssh\\linux-nrf-stm_known_hosts"
+}
+```
+
+This references the existing images without copying an active QEMU disk. The
+QEMU helper also accepts `-ImageDirectory` to override the configured location.
+
 Open `~/embedded-rtos/embedded-linux` in VS Code WSL. Ctrl+Shift+B runs the app-only
 build/upload/run cycle. It stops the boot service first to avoid two UART owners.
 Edits to Linux configuration, packages or the overlay require an image rebuild;

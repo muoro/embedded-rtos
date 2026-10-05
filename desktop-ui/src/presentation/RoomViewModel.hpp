@@ -1,8 +1,8 @@
 #pragma once
 #include "../network/GatewayConnection.hpp"
 #include "../protocol/GatewayProtocol.hpp"
+#include "EventListModel.hpp"
 #include <QObject>
-#include <QStringList>
 #include <QVariantMap>
 
 // Presents validated device state to QML. Device rules remain in firmware.
@@ -15,7 +15,7 @@ class RoomViewModel : public QObject {
     Q_PROPERTY(bool pending READ pending NOTIFY changed)
     Q_PROPERTY(QVariantMap room READ room NOTIFY changed)
     Q_PROPERTY(QString result READ result NOTIFY changed)
-    Q_PROPERTY(QStringList events READ events NOTIFY changed)
+    Q_PROPERTY(EventListModel* events READ events CONSTANT)
   public:
     explicit RoomViewModel(QObject* parent = nullptr);
     ~RoomViewModel() override;
@@ -27,7 +27,7 @@ class RoomViewModel : public QObject {
     bool pending() const;
     QVariantMap room() const;
     QString result() const;
-    QStringList events() const;
+    EventListModel* events();
     Q_INVOKABLE void setLight(bool enabled);
     Q_INVOKABLE void refresh();
   signals:
@@ -35,16 +35,15 @@ class RoomViewModel : public QObject {
     void trafficObserved(const QString& line, bool outbound);
 
   private:
-    static constexpr qsizetype maximumEvents = 60;
     GatewayConnection connection_;
     dashboard::GatewayStatus status_;
     QVariantMap room_;
     QString result_{"No command sent"};
-    QStringList events_;
+    EventListModel events_;
 
     void handleConnection(bool connected);
     void handleLine(const QString& line);
     void applyState(const dashboard::RoomState& state);
     void applyResult(const dashboard::Message& message);
-    void recordEvent(const QString& text);
+    void recordEvent(const QString& category, const QString& text);
 };

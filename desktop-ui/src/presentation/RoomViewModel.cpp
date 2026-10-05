@@ -1,5 +1,4 @@
 #include "RoomViewModel.hpp"
-#include <QDateTime>
 
 RoomViewModel::RoomViewModel(QObject* parent) : QObject(parent) {
     connect(&connection_, &GatewayConnection::connectionChanged, this,
@@ -31,13 +30,13 @@ QVariantMap RoomViewModel::room() const {
 QString RoomViewModel::result() const {
     return result_;
 }
-QStringList RoomViewModel::events() const {
-    return events_;
+EventListModel* RoomViewModel::events() {
+    return &events_;
 }
 
 void RoomViewModel::handleConnection(bool isConnected) {
     if (isConnected) {
-        recordEvent("Connected to Linux gateway");
+        recordEvent("LINK", "Connected to Linux gateway");
         refresh();
     } else {
         if (status_.pending) {
@@ -46,7 +45,7 @@ void RoomViewModel::handleConnection(bool isConnected) {
         const bool hadState = status_.online || status_.valid;
         status_ = {};
         if (hadState) {
-            recordEvent("Disconnected; cached values are stale");
+            recordEvent("LINK", "Disconnected; cached values are stale");
         }
     }
     emit changed();
@@ -67,7 +66,7 @@ void RoomViewModel::setLight(bool enabled) {
     result_ = "Pending — awaiting device";
     connection_.sendLine(dashboard::lightCommand(enabled));
     emit trafficObserved(dashboard::lightCommand(enabled), true);
-    recordEvent(enabled ? "Requested light ON" : "Requested light OFF");
+    recordEvent("CMD", enabled ? "Requested light On" : "Requested light Off");
     emit changed();
 }
 
@@ -83,6 +82,9 @@ void RoomViewModel::handleLine(const QString& line) {
         applyState(message->room);
         break;
     case Kind::Status:
+        if (message->gateway.online != status_.online) {
+            recordEvent("LINK", message->gateway.online ? "Device connected" : "Device offline");
+        }
         status_ = message->gateway;
         break;
     case Kind::Result:
@@ -91,10 +93,10 @@ void RoomViewModel::handleLine(const QString& line) {
     case Kind::Boot:
         status_.valid = false;
         status_.ready = false;
-        recordEvent("Device restarted; requesting state");
+        recordEvent("BOOT", "Device restarted; requesting state");
         break;
     case Kind::Notice:
-        recordEvent(message->reason);
+        recordEvent("LINK", message->reason);
         break;
     }
     emit changed();
@@ -105,12 +107,17 @@ void RoomViewModel::applyState(const dashboard::RoomState& state) {
                            {"light_on", state.lightOn},
                            {"contact_open", state.contactOpen},
                            {"alarm", state.alarm}};
-    if (next != room_) {
-        recordEvent(QString("State: occupied=%1, light=%2, contact=%3, alarm=%4")
-                        .arg(state.occupied)
-                        .arg(state.lightOn)
-                        .arg(state.contactOpen)
-                        .arg(state.alarm));
+    if (room_.isEmpty()) {
+        recordEvent("STATE", "Received initial room state");
+    } else {
+        if (next["occupied"] != room_["occupied"])
+            recordEvent("STATE", state.occupied ? "Room became occupied" : "Room became vacant");
+        if (next["light_on"] != room_["light_on"])
+            recordEvent("STATE", state.lightOn ? "Light changed to On" : "Light changed to Off");
+        if (next["contact_open"] != room_["contact_open"])
+            recordEvent("STATE", state.contactOpen ? "Contact opened" : "Contact closed");
+        if (next["alarm"] != room_["alarm"])
+            recordEvent("STATE", "Alarm changed to " + state.alarm);
     }
     room_ = next;
 }
@@ -129,14 +136,11 @@ void RoomViewModel::applyResult(const dashboard::Message& message) {
         result_ = value + " — " + message.reason;
     }
     status_.pending = value == "pending";
-    recordEvent(result_);
+    recordEvent(value == "confirmed" ? "ACK" : value == "pending" ? "CMD" : "WARN", result_);
 }
 
-void RoomViewModel::recordEvent(const QString& text) {
-    events_.prepend(QDateTime::currentDateTime().toString("HH:mm:ss") + "  " + text);
-    while (events_.size() > maximumEvents) {
-        events_.removeLast();
-    }
+void RoomViewModel::recordEvent(const QString& category, const QString& text) {
+    events_.append(category, text);
 }
 
 RoomViewModel::~RoomViewModel() {

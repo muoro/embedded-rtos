@@ -7,14 +7,17 @@ qt_standard_project_setup()
 add_library(dashboard_core STATIC
     src/network/GatewayConnection.cpp src/network/GatewayConnection.hpp
     src/protocol/GatewayProtocol.cpp src/protocol/GatewayProtocol.hpp
-    src/presentation/RoomViewModel.cpp src/presentation/RoomViewModel.hpp)
+    src/presentation/RoomViewModel.cpp src/presentation/RoomViewModel.hpp
+    src/presentation/EventListModel.cpp src/presentation/EventListModel.hpp)
 target_link_libraries(dashboard_core PUBLIC Qt6::Network)
 qt_add_executable(smart-room-ui src/main.cpp)
 set_target_properties(smart-room-ui PROPERTIES WIN32_EXECUTABLE TRUE)
 target_link_libraries(smart-room-ui PRIVATE dashboard_core Qt6::Quick Qt6::QuickControls2)
 set(DASHBOARD_QML qml/Main.qml qml/Panel.qml qml/RoomControl.qml
     qml/RoomMap.qml qml/FlowPanel.qml qml/EventPanel.qml
-    qml/OverviewPage.qml qml/FlowPage.qml)
+    qml/OverviewPage.qml qml/FlowPage.qml
+    qml/Theme.js qml/LineIcon.qml qml/StatusPill.qml qml/StatCard.qml
+    qml/TopologyStrip.qml qml/TitleBar.qml qml/ResizeHandles.qml qml/ScrollablePage.qml)
 qt_add_resources(smart-room-ui qml PREFIX "/" FILES ${DASHBOARD_QML})
 
 option(BUILD_TESTING "Build Qt UI and reconnect tests" OFF)
@@ -22,6 +25,7 @@ if(BUILD_TESTING)
     enable_testing()
     find_package(Qt6 REQUIRED COMPONENTS Test)
     qt_add_executable(ui-tests tests/ui_tests.cpp)
+    set_target_properties(ui-tests PROPERTIES WIN32_EXECUTABLE FALSE)
     target_link_libraries(ui-tests PRIVATE dashboard_core Qt6::Quick Qt6::QuickControls2 Qt6::Test)
     qt_add_resources(ui-tests qml-test PREFIX "/" FILES ${DASHBOARD_QML})
     add_test(NAME qt-ui-network COMMAND ui-tests)

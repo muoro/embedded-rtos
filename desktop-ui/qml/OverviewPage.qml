@@ -1,71 +1,50 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "Theme.js" as Theme
 
-ScrollView {
+ScrollablePage {
     id: page
     required property var model
+    signal viewAllEvents()
     readonly property bool live: model.connected && model.online && model.valid
-    contentWidth: availableWidth
-    clip: true
-    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+    readonly property bool wide: availableWidth >= 760
+    contentHeight: overviewContent.implicitHeight
     ColumnLayout {
+        id: overviewContent
         width: page.availableWidth
         spacing: 14
+        TopologyStrip { Layout.fillWidth: true; Layout.preferredHeight: 44; model: page.model }
         GridLayout {
-            Layout.fillWidth: true
-            columns: page.availableWidth >= 650 ? 2 : 1
-            columnSpacing: 14
-            rowSpacing: 14
+            Layout.fillWidth: true; columns: page.availableWidth >= 660 ? 4 : 2; columnSpacing: 14; rowSpacing: 14
+            StatCard { Layout.fillWidth: true; Layout.preferredWidth: 180; label: "Occupancy"; icon: "person"; live: page.live; value: page.model.room.occupied === undefined ? "Unknown" : page.model.room.occupied ? "Occupied" : "Vacant" }
+            StatCard { Layout.fillWidth: true; Layout.preferredWidth: 180; label: "Light"; icon: "light"; live: page.live; highlighted: page.model.room.light_on === true; value: page.model.room.light_on === undefined ? "Unknown" : page.model.room.light_on ? "On" : "Off" }
+            StatCard { Layout.fillWidth: true; Layout.preferredWidth: 180; label: "Contact"; icon: "door"; live: page.live; value: page.model.room.contact_open === undefined ? "Unknown" : page.model.room.contact_open ? "Open" : "Closed" }
+            StatCard { Layout.fillWidth: true; Layout.preferredWidth: 180; label: "Alarm"; icon: "shield"; live: page.live; value: page.model.room.alarm === undefined ? "Unknown" : page.model.room.alarm === "none" ? "Clear" : page.model.room.alarm === "warning" ? "Warning" : "Alarm" }
+        }
+        GridLayout {
+            Layout.fillWidth: true; columns: page.wide ? 2 : 1; columnSpacing: 14; rowSpacing: 14
             Panel {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 410
+                Layout.preferredWidth: page.availableWidth * 0.61
+                Layout.preferredHeight: page.wide ? Math.max(310, page.availableHeight - 324) : 340
                 ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 10
-                    Text {
-                        text: "Living room"
-                        color: "#213849"
-                        font.pixelSize: 17
-                        font.weight: Font.DemiBold
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        text: page.live ? "Current device state" : Object.keys(page.model.room).length ? "Cached state · values are not current" : "Waiting for the first device state"
-                        color: page.live ? "#677e8b" : "#996523"
-                        font.pixelSize: 12
-                    }
-                    RoomMap {
-                        objectName: "roomMap"
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        room: page.model.room
-                        live: page.live
-                    }
-                    Text {
-                        Layout.fillWidth: true
-                        text: "Physical board buttons\nB1  Occupancy    B2  Light    B3  Contact    B4  Alarm"
-                        color: "#677e8b"
-                        font.pixelSize: 11
-                        lineHeight: 1.6
-                        wrapMode: Text.WordWrap
+                    anchors.fill: parent; anchors.margins: 20; spacing: 10
+                    Text { text: "Living room"; color: Theme.text; font.pixelSize: 17; font.weight: Font.DemiBold }
+                    RoomMap { objectName: "roomMap"; Layout.fillWidth: true; Layout.fillHeight: true; room: page.model.room; live: page.live }
+                    RowLayout {
+                        spacing: 8
+                        Rectangle { width: 8; height: 8; radius: 4; color: page.live ? Theme.success : Theme.warning }
+                        Text { text: page.live ? "State synchronized" : Object.keys(page.model.room).length ? "Cached state · not current" : "Waiting for device state"; color: Theme.muted; font.pixelSize: 11 }
                     }
                 }
             }
             RoomControl {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 250
-                Layout.maximumWidth: parent.columns === 2 ? 250 : Infinity
-                Layout.preferredHeight: 410
+                Layout.fillWidth: true; Layout.preferredWidth: page.availableWidth * 0.39
+                Layout.preferredHeight: page.wide ? Math.max(310, page.availableHeight - 324) : 320
                 model: page.model
             }
         }
-        FlowPanel {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 174
-            model: page.model
-        }
+        EventPanel { Layout.fillWidth: true; Layout.preferredHeight: 158; model: page.model; compact: true; onViewAll: page.viewAllEvents() }
     }
 }

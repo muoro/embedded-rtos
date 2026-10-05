@@ -1,174 +1,106 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "Theme.js" as Theme
 
 ApplicationWindow {
     id: window
-    width: Math.min(980, Screen.desktopAvailableWidth * 0.90)
-    height: Math.min(680, Screen.desktopAvailableHeight * 0.85)
+    width: Math.min(1200, Screen.desktopAvailableWidth * 0.92)
+    height: Math.min(800, Screen.desktopAvailableHeight * 0.90)
     minimumWidth: 640
     minimumHeight: 440
     visible: true
-    title: "Smart Room · Command Center"
-    color: "#f3f7f8"
+    flags: Qt.Window | Qt.FramelessWindowHint
+    title: "Smart Room · Embedded Linux & RTOS"
+    color: Theme.background
     font.family: "Segoe UI"
+    palette.window: Theme.background
+    palette.windowText: Theme.text
+    palette.text: Theme.text
+    palette.base: Theme.panel
+    palette.highlight: Theme.accent
     property int page: 0
+    readonly property bool compact: width < 1000
     readonly property bool live: gateway.connected && gateway.online && gateway.valid
-    readonly property string connectionText: !gateway.connected ? "Gateway disconnected" : !gateway.online ? "Device offline" : !gateway.valid ? "Waiting for state" : "Device connected"
+    readonly property string connectionText: !gateway.connected ? "Gateway offline" : !gateway.online ? "Device offline" : !gateway.valid ? "Waiting for state" : "Device online"
+    header: TitleBar { window: window }
     RowLayout {
         anchors.fill: parent
         spacing: 0
         Rectangle {
-            Layout.preferredWidth: window.width < 800 ? 132 : 148
+            Layout.preferredWidth: window.compact ? 64 : 186
             Layout.fillHeight: true
-            color: "white"
-            Rectangle {
-                anchors.right: parent.right
-                width: 1
-                height: parent.height
-                color: "#dae6e8"
-            }
+            color: Theme.sidebar
+            Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
             ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 16
-                spacing: 8
-                Text {
-                    text: "Smart Room"
-                    color: "#168e80"
-                    font.pixelSize: 18
-                    font.weight: Font.DemiBold
-                    Layout.topMargin: 14
-                    Layout.bottomMargin: 30
-                }
+                anchors.fill: parent; anchors.margins: 8; spacing: 6
                 Repeater {
-                    model: ["Overview", "Live Flow", "Events"]
+                    model: [{label: "Overview", icon: "home"}, {label: "Devices", icon: "chip"}, {label: "Events", icon: "events"}]
                     Button {
-                        required property string modelData
+                        id: nav
+                        required property var modelData
                         required property int index
                         objectName: "nav" + index
-                        Layout.fillWidth: true
-                        implicitHeight: 42
-                        text: modelData
+                        Layout.fillWidth: true; Layout.topMargin: index === 0 ? 6 : 0
+                        implicitHeight: 48
+                        Accessible.name: modelData.label
                         onClicked: window.page = index
-                        contentItem: Text {
-                            text: parent.text
-                            leftPadding: 12
-                            verticalAlignment: Text.AlignVCenter
-                            color: window.page === index ? "#168e80" : "#677e8b"
-                            font.pixelSize: 14
-                            font.weight: window.page === index ? Font.DemiBold : Font.Normal
+                        ToolTip.visible: hovered && window.compact
+                        ToolTip.text: modelData.label
+                        contentItem: RowLayout {
+                            spacing: 16
+                            LineIcon { Layout.leftMargin: window.compact ? 4 : 12; name: nav.modelData.icon; stroke: window.page === nav.index ? Theme.accent : Theme.muted }
+                            Text { visible: !window.compact; Layout.fillWidth: true; text: nav.modelData.label; color: window.page === nav.index ? "#b3f6f8" : Theme.muted; font.pixelSize: 14; font.weight: window.page === nav.index ? Font.DemiBold : Font.Normal }
                         }
                         background: Rectangle {
-                            radius: 8
-                            color: window.page === index ? "#e4f4ef" : parent.hovered ? "#f3f7f8" : "transparent"
-                            border.width: parent.activeFocus ? 2 : 0
-                            border.color: "#168e80"
+                            radius: 7; color: window.page === nav.index ? Theme.selected : nav.hovered ? Theme.panel : "transparent"
+                            border.width: nav.activeFocus ? 1 : 0; border.color: Theme.accent
+                            Rectangle { visible: window.page === nav.index; anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; width: 4; height: 32; radius: 2; color: Theme.accent }
                         }
                     }
                 }
-                Text {
-                    visible: window.height >= 620
-                    text: "SYSTEM"
-                    color: "#677e8b"
-                    font.pixelSize: 10
-                    font.letterSpacing: 1.5
-                    Layout.topMargin: 30
-                    Layout.leftMargin: 10
-                }
-                Text {
-                    visible: window.height >= 620
-                    text: "nRF52832 DK\nRoom controller"
-                    color: "#677e8b"
-                    font.pixelSize: 12
-                    lineHeight: 1.5
-                    Layout.leftMargin: 10
-                    Layout.topMargin: 8
-                }
-                Text {
-                    visible: window.height >= 620
-                    text: "Linux gateway\nBuildroot · ARM64"
-                    color: "#677e8b"
-                    font.pixelSize: 12
-                    lineHeight: 1.5
-                    Layout.leftMargin: 10
-                    Layout.topMargin: 8
-                }
-                Item {
-                    Layout.fillHeight: true
-                }
-                Text {
-                    text: "ROOM 01\nWindows · Qt / QML"
-                    color: "#677e8b"
-                    font.pixelSize: 11
-                    lineHeight: 1.6
-                    Layout.leftMargin: 10
-                    Layout.bottomMargin: 12
+                Item { Layout.fillHeight: true }
+                RowLayout {
+                    Layout.leftMargin: window.compact ? 12 : 16; Layout.bottomMargin: 18; spacing: 10
+                    LineIcon { name: "monitor"; width: 18; height: 18 }
+                    Rectangle { visible: !window.compact; width: 6; height: 6; radius: 3; color: Theme.accent }
+                    Text { visible: !window.compact; text: "Local workspace"; color: Theme.muted; font.pixelSize: 11 }
                 }
             }
         }
         ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.margins: 16
+            Layout.fillWidth: true; Layout.fillHeight: true
+            Layout.margins: window.width < 800 ? 14 : 24
             spacing: 18
-            GridLayout {
+            Item {
+                id: pageHeader
                 Layout.fillWidth: true
-                columns: window.width >= 900 ? 3 : 1
+                implicitHeight: heading.implicitHeight + (window.width < 800 ? 38 : 0)
                 ColumnLayout {
-                    spacing: 5
-                    Text {
-                        text: ["Room overview", "Live system flow", "Recent events"][window.page]
-                        color: "#213849"
-                        font.pixelSize: 24
-                        font.weight: Font.DemiBold
-                    }
-                    Text {
-                        text: "One room. Every state and connection in view."
-                        color: "#677e8b"
-                        font.pixelSize: 12
-                    }
+                    id: heading
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    spacing: 4
+                    Text { text: ["Room overview", "Connected devices", "Recent events"][window.page]; color: Theme.text; font.pixelSize: window.width < 800 ? 24 : 29; font.weight: Font.Bold }
+                    Text { text: ["Live state from the nRF52832", "From the physical device to your screen", "Device changes and command outcomes"][window.page]; color: Theme.muted; font.pixelSize: 14 }
                 }
-                Item {
-                    Layout.fillWidth: true
-                }
-                Rectangle {
-                    implicitWidth: statusText.implicitWidth + 30
-                    implicitHeight: 32
-                    radius: 16
-                    color: window.live ? "#e4f4ef" : "#fff0d9"
-                    Text {
-                        id: statusText
-                        objectName: "connectionStatus"
-                        anchors.centerIn: parent
-                        text: window.connectionText
-                        color: window.live ? "#168e80" : "#996523"
-                        font.pixelSize: 12
-                    }
+                StatusPill {
+                    objectName: "connectionStatus"
+                    x: window.width < 800 ? 0 : pageHeader.width - width
+                    y: window.width < 800 ? heading.implicitHeight + 8 : (heading.implicitHeight - height) / 2
+                    label: window.connectionText
+                    tone: window.live ? Theme.success : Theme.warning
                 }
             }
             StackLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.minimumHeight: 0
+                Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 0
                 currentIndex: window.page
-                OverviewPage {
-                    objectName: "overviewPage"
-                    model: gateway
-                }
-                FlowPage {
-                    model: gateway
-                }
-                EventPanel {
-                    model: gateway
-                }
-            }
-            Text {
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                text: window.live ? "LIVE HARDWARE  ·  Room state is owned by the nRF controller" : "Controls unlock after a fresh, valid device state arrives"
-                color: "#677e8b"
-                font.pixelSize: 11
+                OverviewPage { objectName: "overviewPage"; model: gateway; onViewAllEvents: window.page = 2 }
+                FlowPage { model: gateway }
+                EventPanel { model: gateway }
             }
         }
     }
+    Rectangle { anchors.fill: parent; color: "transparent"; border.color: Theme.border }
+    ResizeHandles { anchors.fill: parent; window: window; z: 100 }
 }

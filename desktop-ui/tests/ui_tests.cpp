@@ -1,5 +1,6 @@
 #include "../src/presentation/RoomViewModel.hpp"
 #include <QQmlApplicationEngine>
+#include <QFontDatabase>
 #include <QQmlContext>
 #include <QQuickItem>
 #include <QQuickStyle>
@@ -10,6 +11,25 @@
 class UiTest : public QObject {
     Q_OBJECT
   private slots:
+    void initTestCase() {
+#ifdef Q_OS_WIN
+        // The offscreen platform has no Windows font database of its own.
+        const auto fonts = qEnvironmentVariable("WINDIR") + "/Fonts/";
+        for (const auto* file : {"segoeui.ttf", "segoeuib.ttf", "seguisb.ttf"}) {
+            QVERIFY(QFontDatabase::addApplicationFont(fonts + file) >= 0);
+        }
+#endif
+    }
+    void eventLogIsStructuredAndBounded() {
+        EventListModel events;
+        QAbstractItemModelTester modelTester(&events, QAbstractItemModelTester::FailureReportingMode::QtTest);
+        for (int i = 0; i < 65; ++i) events.append("STATE", QString::number(i));
+        QCOMPARE(events.rowCount(), 60);
+        QCOMPARE(events.data(events.index(0), EventListModel::DescriptionRole).toString(), QString("64"));
+        QCOMPARE(events.data(events.index(59), EventListModel::DescriptionRole).toString(), QString("5"));
+        QCOMPARE(events.data(events.index(0), EventListModel::CategoryRole).toString(), QString("STATE"));
+        QCOMPARE(events.data(events.index(0), EventListModel::TimeRole).toString().size(), 8);
+    }
     void protocolValidation() {
         using dashboard::parseMessage;
         QVERIFY(parseMessage("ROOM STATE occupied=1 light_on=0 contact_open=0 alarm=none"));
@@ -75,6 +95,11 @@ class UiTest : public QObject {
         QTRY_VERIFY(client.ready());
         QVERIFY(client.result().startsWith("Confirmed"));
         QTRY_VERIFY(toggle->property("checked").toBool());
+        // Capture the implemented design with a real test TCP peer, not fake UI bindings.
+        window->resize(1200, 800);
+        QTest::qWait(150);
+        const auto shots = qEnvironmentVariable("SMART_ROOM_TEST_SHOTS");
+        if (!shots.isEmpty()) QVERIFY(window->grabWindow().save(shots + "/overview-desktop.png"));
         click();
         QTRY_VERIFY(client.pending());
         QTRY_VERIFY(peer->bytesAvailable() > 0);
@@ -93,6 +118,8 @@ class UiTest : public QObject {
         QTRY_VERIFY(!roomMap->property("live").toBool());
         QVERIFY(roomMap->property("lightOn").toBool()); // Cached, never presented as fresh.
         QVERIFY(client.result().startsWith("Unknown"));
+        QTest::qWait(100);
+        if (!shots.isEmpty()) QVERIFY(window->grabWindow().save(shots + "/overview-disconnected.png"));
         QTRY_VERIFY_WITH_TIMEOUT(server.hasPendingConnections(), 4000);
         auto second = server.nextPendingConnection();
         QTRY_VERIFY(client.connected());
