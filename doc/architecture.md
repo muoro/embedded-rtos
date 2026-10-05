@@ -1,5 +1,12 @@
 # Architecture
 
+```mermaid
+flowchart LR
+    N["nRF52832 DK<br/>Zephyr / C"] <-->|UART| B["Windows serial bridge"]
+    B <-->|"TCP 5555 carries UART bytes"| L["QEMU ARM64<br/>Buildroot / C++ gateway"]
+    L <-->|"TCP 5556"| Q["Windows Qt / QML"]
+```
+
 ## State ownership
 
 The nRF firmware owns room state and applies room rules. In particular, occupancy

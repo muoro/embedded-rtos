@@ -7,14 +7,7 @@ The current application is Smart Room: physical buttons change occupancy,
 light, contact and alarm state. The dashboard displays that state and can
 request a light change. The firmware remains the authority for device state.
 
-![Smart Room dashboard](doc/images/smart-room-ui.png)
-
-```mermaid
-flowchart LR
-    N["nRF52832 DK<br/>Zephyr / C"] <-->|UART| B["Windows serial bridge"]
-    B <-->|"TCP 5555 carries UART bytes"| L["QEMU ARM64<br/>Buildroot / C++ gateway"]
-    L <-->|"TCP 5556"| Q["Windows Qt / QML"]
-```
+![System architecture: Zephyr hardware, WSL build environment, QEMU Linux gateway and Windows Qt dashboard; STM32 is planned](doc/images/big-picture.png)
 
 ## Embedded Linux
 
@@ -31,6 +24,11 @@ flowchart LR
 - Separate room-domain, protocol, indicator and diagnostic responsibilities.
 - Multiple threads, zbus state/event distribution and a command message queue.
 - Bidirectional UART protocol; RTT is used for diagnostics.
+
+## Qt/QML interface
+
+The Windows dashboard displays room state and gateway connectivity, sends light
+commands and shows their outcomes. See the [GUI overview and screenshot](desktop-ui/README.md).
 
 ## Try it
 

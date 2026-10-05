@@ -1,5 +1,7 @@
 # Qt/QML dashboard
 
+![Smart Room dashboard](../doc/images/smart-room-ui.png)
+
 Windows Qt **6.8.3 MinGW 64-bit**, matching **MinGW 13.1**, CMake and Ninja were
 used for the development baseline. `build.ps1` accepts `QT_ROOT` and `MINGW_ROOT`
 environment overrides instead of requiring these installations in fixed locations.
